@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+{% block title %}Danh sách báo hỏng - OptiDUT{% endblock %}
+{% block extra_css %}
+<style>
+    .report-wrapper { max-width: 100%; margin: 0 auto; }
+    
+    /* Stats Card Styling - Compact Horizontal */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 24px; }
+    .stat-card { 
+        background: var(--color-white); 
+        border-radius: 4px; 
+        padding: 16px 20px; 
+        display: flex; 
+        align-items: center; 
+        gap: 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        border: 1px solid var(--color-border);
+        transition: all 0.2s;
+        text-decoration: none;
+        color: inherit;
+    }
+    .stat-card:hover { border-color: var(--color-primary); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .stat-card img { 
+        width: 40px; 
+        height: 40px; 
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+    .stat-info { display: flex; flex-direction: column; line-height: 1.2; }
+    .stat-value { font-size: 22px; font-weight: 800; color: var(--color-primary); }
+    .stat-label { font-size: 13px; color: var(--color-text-secondary); font-weight: 600; }
+
+    /* Filter Bar */
+    .filter-section { 
+        background: #fff; 
+        border: 1px solid var(--color-border); 
+        padding: 20px; 
+        margin-bottom: 24px; 
+        border-radius: 4px;
+    }
+    .filter-grid { 
+        display: grid; 
+        grid-template-columns: 2fr 1fr 1fr 1fr 1.2fr 1fr auto; 
+        gap: 12px; 
+        align-items: flex-end; 
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 6px; }
+    .filter-group label { font-size: 11px; font-weight: 700; color: var(--color-primary); text-transform: uppercase; }
+    .filter-input, .filter-select { 
+        height: 38px; 
+        padding: 0 10px; 
+        border: 1px solid var(--color-border); 
+        border-radius: 4px; 
+        font-size: 13px; 
+        width: 100%;
+    }
+    .btn-filter { height: 38px; padding: 0 20px; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+
+    /* Data Table */
+    .table-shell { 
+        background: var(--color-white); 
+        border: 1px solid var(--color-border);
+        border-radius: 4px; 
+        overflow: hidden; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .report-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .report-table th { 
+        background: #003366; 
+        color: #fff; 
+        font-weight: 600; 
+        text-align: left; 
+        padding: 14px 16px; 
+        font-size: 12px; 
+        text-transform: uppercase;
+        border-right: 1px solid rgba(255,255,255,0.1);
+    }
+    .report-table td { 
+        padding: 14px 16px; 
+        border-bottom: 1px solid #F1F5F9; 
+        color: var(--color-text);
+        border-right: 1px solid #F1F5F9;
+    }
+    .report-table td:last-child { border-right: none; }
+    .report-table tbody tr:nth-child(even) { background: #F8FAFC; }
+    .report-table tbody tr:hover { background: #F1F5F9; }
+
+    /* action-btns style */
+    .action-btns { display: flex; gap: 6px; justify-content: center; }
+    .btn-icon-v2 { 
+        width: 32px; 
+        height: 32px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        border-radius: 4px; 
+        border: 1px solid var(--color-border);
+        background: #fff;
+        cursor: pointer; 
+        transition: all 0.2s;
+        font-size: 16px;
+    }
+    .btn-icon-v2:hover { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+    .btn-icon-v2.btn-success:hover { background: var(--color-success); border-color: var(--color-success); }
+    .btn-icon-v2.btn-warning:hover { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+
+    /* Modal Styling */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        backdrop-filter: blur(4px);
+    }
+    .modal-content {
+        background-color: #fff;
+        margin: 10% auto;
+        border-radius: 8px;
+        width: 500px;
+        max-width: 90%;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        animation: modalFadeIn 0.3s ease;
+    }
+    @keyframes modalFadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-header {
+        padding: 16px 20px;
+        background: #f9fafb;
+        border-bottom: 1px solid var(--color-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .modal-header h3 { margin: 0; font-size: 16px; color: var(--color-primary); font-weight: 700; }
+    .close-modal { font-size: 24px; cursor: pointer; color: #9ca3af; line-height: 1; }
+    .modal-body { padding: 20px; }
+
+    /* Popover Confirm Styling */
+    .popover-confirm {
+        display: none;
+        position: absolute;
+        background: white;
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        padding: 15px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        z-index: 1001;
+        width: 220px;
+        animation: popoverFadeIn 0.2s ease;
+    }
+    @keyframes popoverFadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .popover-confirm.active { display: block; }
+    .popover-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--color-text); }
+    .popover-footer { display: flex; gap: 8px; justify-content: flex-end; }
+
+    @media (max-width: 1400px) {
+        .filter-grid { grid-template-columns: repeat(3, 1fr); }
+        .btn-filter { width: 100%; justify-content: center; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-wrapper">
+    <div class="page-header" style="margin-bottom: 24px;">
+        <h1 class="page-title"><i class='bx bx-error-circle'></i> Danh sách báo hỏng thiết bị</h1>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <img src="/static/img/stats-total.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3503/3503827.png'" alt="Total">
+            <div class="stat-info">
+                <span class="stat-value">{{ thong_ke.tong }}</span>
+                <span class="stat-label">Tổng báo hỏng</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <img src="/static/img/stats-teachers.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2972/2972531.png'" alt="Pending">
+            <div class="stat-info">
+                <span class="stat-value">{{ thong_ke.cho_xu_ly }}</span>
+                <span class="stat-label">Chờ xử lý</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <img src="/static/img/stats-rooms.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1087/1087080.png'" alt="Repairing">
+            <div class="stat-info">
+                <span class="stat-value">{{ thong_ke.dang_sua }}</span>
+                <span class="stat-label">Đang sửa</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <img src="/static/img/stats-cancel.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/190/190411.png'" alt="Done">
+            <div class="stat-info">
+                <span class="stat-value">{{ thong_ke.da_sua }}</span>
+                <span class="stat-label">Đã sửa</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-section">
+        <form method="get" class="filter-grid">
+            <div class="filter-group">
+                <label>Tìm kiếm</label>
+                <input type="text" name="q" value="{{ tu_khoa }}" class="filter-input" placeholder="Tên thiết bị...">
+            </div>
+            <div class="filter-group">
+                <label>Phòng</label>
+                <select name="phong" class="filter-select">
+                    <option value="">Tất cả</option>
+                    {% for p in ds_phong %}
+                    <option value="{{ p.id }}" {% if phong_loc == p.id|stringformat:'s' %}selected{% endif %}>{{ p.ma_phong }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Trạng thái</label>
+                <select name="trang_thai" class="filter-select">
+                    <option value="">Tất cả</option>
+                    {% for value, label in trang_thai_choices %}
+                    <option value="{{ value }}" {% if trang_thai_loc == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Từ ngày</label>
+                <input type="date" name="tu_ngay" value="{{ tu_ngay }}" class="filter-input">
+            </div>
+            <div class="filter-group">
+                <label>Đến ngày</label>
+                <input type="date" name="den_ngay" value="{{ den_ngay }}" class="filter-input">
+            </div>
+            <button type="submit" class="btn btn-primary btn-filter">
+                <i class='bx bx-search'></i> Lọc
+            </button>
+            {% if tu_khoa or phong_loc or trang_thai_loc or tu_ngay or den_ngay %}
+            <a href="{% url 'danh_sach_bao_hong' %}" class="btn btn-outline btn-filter"><i class='bx bx-x'></i></a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-shell">
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th class="text-center" width="60">STT</th>
+                    <th>THIẾT BỊ</th>
+                    <th class="text-center">PHÒNG</th>
+                    <th>NGƯỜI BÁO</th>
+                    <th>MÔ TẢ</th>
+                    <th class="text-center">TRẠNG THÁI</th>
+                    <th class="text-center">NGÀY BÁO</th>
+                    <th class="text-center" width="120">THAO TÁC</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bh in bao_hongs %}
+                <tr>
+                    <td class="text-center">{{ bao_hongs.start_index|add:forloop.counter0 }}</td>
+                    <td style="font-weight: 600; color: var(--color-primary);">{{ bh.thiet_bi.ten_thiet_bi }}</td>
+                    <td class="text-center" style="font-weight: 700;">{{ bh.thiet_bi.phong_hoc.ma_phong }}</td>
+                    <td>{{ bh.nguoi_bao.ho_ten }}</td>
+                    <td><div class="text-truncate" style="max-width: 250px;" title="{{ bh.mo_ta }}">{{ bh.mo_ta }}</div></td>
+                    <td class="text-center">
+                        {% if bh.trang_thai == 'cho_xu_ly' %}<span class="badge badge-warning" style="font-size: 11px;">Chờ xử lý</span>
+                        {% elif bh.trang_thai == 'dang_sua' %}<span class="badge badge-accent" style="font-size: 11px;">Đang sửa</span>
+                        {% else %}<span class="badge badge-success" style="font-size: 11px;">Đã sửa</span>{% endif %}
+                    </td>
+                    <td class="text-center" style="font-size: 13px; color: #6b7280;">{{ bh.ngay_bao|date:"d/m/Y H:i" }}</td>
+                    <td class="text-center">
+                        <div class="action-btns">
+                            {% with formatted_date=bh.ngay_bao|date:"d/m/Y H:i" %}
+                            <button class="btn-icon-v2" title="Xem chi tiết" 
+                                data-device="{{ bh.thiet_bi.ten_thiet_bi|escapejs }}"
+                                data-room="{{ bh.thiet_bi.phong_hoc.ma_phong|escapejs }}"
+                                data-reporter="{{ bh.nguoi_bao.ho_ten|escapejs }}"
+                                data-time="{{ formatted_date|escapejs }}"
+                                data-desc="{{ bh.mo_ta|escapejs }}"
+                                onclick="openDetail(this)">
+                                <i class='bx bx-show'></i>
+                            </button>
+                            {% endwith %}
+                            
+                            {% if bh.trang_thai == 'cho_xu_ly' %}
+                            <button type="button" class="btn-icon-v2 btn-warning" title="Duyệt sửa" 
+                                data-status="dang_sua" data-id="{{ bh.id }}" onclick="openConfirm(this)">
+                                <i class='bx bx-wrench'></i>
+                            </button>
+                            {% elif bh.trang_thai == 'dang_sua' %}
+                            <button type="button" class="btn-icon-v2 btn-success" title="Hoàn thành" 
+                                data-status="da_sua" data-id="{{ bh.id }}" onclick="openConfirm(this)">
+                                <i class='bx bx-check-double'></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="empty-state" style="padding: 60px;">Không có dữ liệu báo hỏng nào.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% with page_obj=bao_hongs %}{% include 'components/Pagination.html' %}{% endwith %}
+</div>
+
+<!-- Modal Details -->
+<div id="reportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Chi tiết sự cố thiết bị</h3>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="modalContent"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Popover -->
+<div id="confirmPopover" class="popover-confirm">
+    <div class="popover-title" id="popoverTitle">Xác nhận?</div>
+    <div class="popover-footer">
+        <button class="btn btn-secondary btn-sm" onclick="closePopover()">Huỷ</button>
+        <form id="popoverForm" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="trang_thai" id="popoverStatus">
+            <button type="submit" class="btn btn-primary btn-sm">Xác nhận</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openDetail(btn) {
+        const device = btn.getAttribute('data-device');
+        const room = btn.getAttribute('data-room');
+        const reporter = btn.getAttribute('data-reporter');
+        const time = btn.getAttribute('data-time');
+        const desc = btn.getAttribute('data-desc');
+
+        let content = `
+            <div style="padding: 5px 0;">
+                <div style="margin-bottom: 12px; display: flex; align-items: baseline;">
+                    <div style="width: 120px; color: #64748b; font-size: 13px; font-weight: 500;">Thiết bị:</div>
+                    <div style="flex: 1; color: #1e293b; font-weight: 600;">${device}</div>
+                </div>
+                <div style="margin-bottom: 12px; display: flex; align-items: baseline;">
+                    <div style="width: 120px; color: #64748b; font-size: 13px; font-weight: 500;">Phòng học:</div>
+                    <div style="flex: 1; color: #1e293b; font-weight: 600;">${room}</div>
+                </div>
+                <div style="margin-bottom: 12px; display: flex; align-items: baseline;">
+                    <div style="width: 120px; color: #64748b; font-size: 13px; font-weight: 500;">Người báo:</div>
+                    <div style="flex: 1; color: #1e293b;">${reporter}</div>
+                </div>
+                <div style="margin-bottom: 20px; display: flex; align-items: baseline;">
+                    <div style="width: 120px; color: #64748b; font-size: 13px; font-weight: 500;">Thời gian:</div>
+                    <div style="flex: 1; color: #1e293b;">${time}</div>
+                </div>
+                
+                <div style="border-top: 1px solid #f1f5f9; padding-top: 15px;">
+                    <div style="color: #64748b; font-size: 12px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">Mô tả sự cố:</div>
+                    <div style="color: #334155; line-height: 1.6; font-size: 14px; white-space: pre-line; background: #f8fafc; padding: 12px; border-radius: 4px;">${desc}</div>
+                </div>
+            </div>
+        `;
+        document.getElementById('modalContent').innerHTML = content;
+        document.getElementById('reportModal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('reportModal').style.display = 'none';
+    }
+
+    let currentPopoverBtn = null;
+    function openConfirm(btn) {
+        currentPopoverBtn = btn;
+        const status = btn.getAttribute('data-status');
+        const id = btn.getAttribute('data-id');
+        
+        const popover = document.getElementById('confirmPopover');
+        const rect = btn.getBoundingClientRect();
+        
+        popover.style.top = (rect.top + window.scrollY - 100) + 'px';
+        popover.style.left = (rect.left + window.scrollX - 160) + 'px';
+        
+        document.getElementById('popoverStatus').value = status;
+        document.getElementById('popoverForm').action = `/equipment/reports/${id}/status/`;
+        document.getElementById('popoverTitle').innerText = status === 'dang_sua' ? 'Duyệt sửa chữa?' : 'Xác nhận hoàn thành?';
+        
+        popover.classList.add('active');
+        
+        setTimeout(() => {
+            window.addEventListener('click', handleOutsideClick);
+        }, 10);
+    }
+
+    function closePopover() {
+        document.getElementById('confirmPopover').classList.remove('active');
+        window.removeEventListener('click', handleOutsideClick);
+    }
+
+    function handleOutsideClick(e) {
+        const popover = document.getElementById('confirmPopover');
+        if (!popover.contains(e.target) && e.target !== currentPopoverBtn && !currentPopoverBtn.contains(e.target)) {
+            closePopover();
+        }
+    }
+
+    window.onclick = function(event) {
+        let modal = document.getElementById('reportModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+</script>
+{% endblock %}

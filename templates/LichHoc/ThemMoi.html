@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+{% block title %}Thêm lịch học - OptiDUT{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .page-content { max-width: 1000px !important; margin: 0 auto !important; padding: 30px !important; }
+    
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .page-title { font-size: 20px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 10px; margin: 0; }
+
+    .form-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+
+    .hint-box { background: #f8fafc; border-left: 4px solid #003366; padding: 12px 16px; margin-bottom: 24px; color: #475569; font-size: 13px; line-height: 1.5; border-radius: 0 4px 4px 0; }
+
+    .section-label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px; margin-top: 24px; }
+    .section-label:first-of-type { margin-top: 0; }
+
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: span 2; }
+    
+    .form-label { font-size: 13px; font-weight: 600; color: #334155; }
+    .form-input { height: 40px; border-radius: 6px; border: 1px solid #e2e8f0; padding: 0 12px; font-size: 13px; transition: all 0.2s; }
+    .form-input:focus { border-color: #003366; outline: none; box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1); }
+
+    .error-list { color: #dc2626; font-size: 12px; margin-top: 4px; list-style: none; padding: 0; }
+    
+    .form-actions { display: flex; gap: 10px; margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 20px; justify-content: flex-end; }
+    .btn { height: 40px; border-radius: 6px; padding: 0 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
+    .btn-primary { background: #003366; color: white; }
+    .btn-primary:hover { background: #00264d; }
+    .btn-outline { background: white; border-color: #e2e8f0; color: #64748b; }
+    .btn-outline:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
+    .btn-accent { background: #f1f5f9; border-color: #e2e8f0; color: #003366; }
+    .btn-accent:hover { background: #e2e8f0; }
+
+    /* Custom Select2 for New Design */
+    .select2-container--default .select2-selection--single {
+        height: 40px; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; align-items: center;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        padding-left: 12px; font-size: 13px; color: #1e293b;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 38px; right: 10px; }
+    .select2-dropdown { border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; }
+    .select2-results__option { padding: 10px 12px; font-size: 13px; }
+    .select2-results__option--highlighted[aria-selected] { background-color: #003366 !important; }
+
+    /* Suggestion Items */
+    .suggestion-container { margin-top: 12px; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+    .suggestion-header { font-size: 12px; font-weight: 700; color: #003366; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .suggestion-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .suggestion-item { 
+        padding: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;
+        display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;
+    }
+    .suggestion-item:hover { border-color: #003366; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .s-phong { font-weight: 700; color: #1e293b; font-size: 14px; }
+    .s-info { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .s-score { font-weight: 700; color: #059669; font-size: 12px; }
+
+    @media (max-width: 640px) {
+        .form-grid, .suggestion-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="schedule-admin">
+    <div class="page-header">
+        <h1 class="page-title"><i class='bx bx-calendar-plus'></i> Xếp lịch học mới</h1>
+        <a href="{% url 'danh_sach_lich' %}" class="btn btn-outline">
+            <i class='bx bx-arrow-back'></i> Quay lại
+        </a>
+    </div>
+
+    <div class="form-card">
+        <div class="hint-box">
+            <i class='bx bx-info-circle'></i> Hệ thống sẽ tự động kiểm tra trùng lặp thời gian, phòng học và giảng viên để đảm bảo lịch học không bị xung đột.
+        </div>
+
+        {% if form.errors %}
+        <div class="form-errors" style="background: #fef2f2; border: 1px solid #fee2e2; padding: 12px; border-radius: 6px; margin-bottom: 24px; color: #b91c1c; font-size: 13px;">
+            <div style="font-weight: 700; margin-bottom: 4px;">Vui lòng kiểm tra các lỗi sau:</div>
+            {% if form.non_field_errors %}
+                {% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}
+            {% endif %}
+            <ul style="padding-left: 20px; margin: 4px 0;">
+                {% for field, errors in form.errors.items %}
+                    {% if field != '__all__' %}
+                        {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <p class="section-label">1. Thông tin Khóa học</p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Tên môn học <span style="color:#dc2626">*</span></label>
+                    {{ form.mon_hoc }}
+                    <datalist id="mon_hoc_list">
+                        {% for m in ds_mon_hoc %}{% if m %}<option value="{{ m }}"></option>{% endif %}{% endfor %}
+                    </datalist>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Chọn lớp học <span style="color:#dc2626">*</span></label>
+                    {{ form.lop_hoc }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Giảng viên phụ trách <span style="color:#dc2626">*</span></label>
+                    {{ form.giang_vien }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sĩ số dự kiến</label>
+                    {{ form.si_so }}
+                </div>
+            </div>
+
+            <p class="section-label">2. Thời gian & Địa điểm</p>
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label class="form-label">Ngày học <span style="color:#dc2626">*</span></label>
+                    {{ form.ngay_hoc }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tiết bắt đầu (1-14) <span style="color:#dc2626">*</span></label>
+                    {{ form.tiet_bat_dau }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tiết kết thúc (1-14) <span style="color:#dc2626">*</span></label>
+                    {{ form.tiet_ket_thuc }}
+                </div>
+                <div class="form-group full">
+                    <label class="form-label">Phòng học <span style="color:#dc2626">*</span></label>
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">{{ form.phong_hoc }}</div>
+                        <button type="button" id="btnGoiY" class="btn btn-accent">
+                            <i class='bx bx-wand'></i> Gợi ý tối ưu
+                        </button>
+                    </div>
+
+                    <div id="goiYResults" style="display: none;" class="suggestion-container">
+                        <div class="suggestion-header">
+                            <i class='bx bx-list-check'></i> Danh sách phòng phù hợp nhất:
+                        </div>
+                        <div id="listGoiY" class="suggestion-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="section-label">3. Thông tin bổ sung</p>
+            <div class="form-group full">
+                <label class="form-label">Ghi chú (Tùy chọn)</label>
+                {{ form.ghi_chu }}
+            </div>
+            
+            <div class="form-actions">
+                <a href="{% url 'danh_sach_lich' %}" class="btn btn-outline">Hủy bỏ</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class='bx bx-save'></i> Hoàn tất xếp lịch
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize Select2
+        const select2Phong = $('#id_phong_hoc').select2({
+            width: '100%',
+            placeholder: "Chọn phòng học..."
+        });
+
+        $('.form-select').not('#id_phong_hoc').select2({ width: '100%' });
+        
+        const selectMon = $('#id_mon_hoc');
+        const selectLop = $('#id_lop_hoc');
+        const selectGV = $('#id_giang_vien');
+
+        // Khi chọn Môn học -> Lọc Lớp học phần
+        selectMon.on('change', function() {
+            const monId = $(this).val();
+            if (!monId) return;
+
+            fetch(`/schedules/api/loc-lop-theo-mon/?mon_id=${monId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const currentLopId = selectLop.val();
+                    selectLop.empty().append('<option value="">---------</option>');
+                    data.lops.forEach(l => {
+                        selectLop.append(new Option(l.ten_lop, l.id));
+                    });
+                    // Nếu lớp cũ vẫn thuộc môn mới thì giữ lại
+                    if (data.lops.find(l => l.id == currentLopId)) {
+                        selectLop.val(currentLopId).trigger('change.select2');
+                    } else {
+                        selectLop.trigger('change');
+                    }
+                });
+        });
+
+        // Khi chọn Lớp học phần -> Tự động chọn Môn học và Giảng viên
+        selectLop.on('change', function() {
+            const lopId = $(this).val();
+            if (!lopId) return;
+
+            fetch(`/schedules/api/loc-lop-theo-mon/?lop_id=${lopId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.mon_id) {
+                        selectMon.val(data.mon_id).trigger('change.select2');
+                    }
+                    if (data.giang_vien_id) {
+                        selectGV.val(data.giang_vien_id).trigger('change.select2');
+                    }
+                });
+        });
+        
+        // Suggestion Logic
+        const btnGoiY = document.getElementById('btnGoiY');
+        const resultsDiv = document.getElementById('goiYResults');
+        const listGoiY = document.getElementById('listGoiY');
+
+        btnGoiY.addEventListener('click', function() {
+            const ngay = document.getElementById('id_ngay_hoc').value;
+            const tbd = document.getElementById('id_tiet_bat_dau').value;
+            const tkt = document.getElementById('id_tiet_ket_thuc').value;
+            const si_so = document.getElementById('id_si_so').value || 0;
+            const lop_id = document.getElementById('id_lop_hoc').value;
+
+            if (!ngay) { alert("Vui lòng chọn ngày học trước!"); return; }
+
+            btnGoiY.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i>";
+            btnGoiY.disabled = true;
+
+            const url = `/schedules/goi-y-phong/?ngay=${ngay}&tiet_bd=${tbd}&tiet_kt=${tkt}&si_so=${si_so}&lop_id=${lop_id}`;
+
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    btnGoiY.innerHTML = "<i class='bx bx-wand'></i> Gợi ý tối ưu";
+                    btnGoiY.disabled = false;
+                    
+                    if (data.data && data.data.length > 0) {
+                        resultsDiv.style.display = 'block';
+                        listGoiY.innerHTML = "";
+                        data.data.forEach(p => {
+                            const item = document.createElement('div');
+                            item.className = "suggestion-item";
+                            item.innerHTML = `
+                                <div>
+                                    <div class="s-phong">${p.ten_phong}</div>
+                                    <div class="s-info">${p.suc_chua} chỗ - ${p.loai_phong}</div>
+                                </div>
+                                <div class="s-score">${p.score}đ</div>
+                            `;
+                            item.onclick = () => {
+                                select2Phong.val(p.id).trigger('change');
+                                resultsDiv.style.display = 'none';
+                            };
+                            listGoiY.appendChild(item);
+                        });
+                    } else {
+                        alert("Không tìm thấy phòng trống phù hợp trong khung giờ này.");
+                    }
+                })
+                .catch(err => {
+                    alert("Lỗi: " + err.message);
+                    btnGoiY.disabled = false;
+                    btnGoiY.innerHTML = "<i class='bx bx-wand'></i> Gợi ý tối ưu";
+                });
+        });
+    });
+</script>
+{% endblock %}

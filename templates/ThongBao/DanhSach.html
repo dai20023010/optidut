@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Thông báo - OptiDUT{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notif-page-wrapper { max-width: 1400px; margin: 0 auto; padding-bottom: 60px; }
+    
+    /* Toolbar & Navigation */
+    .week-toolbar { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .week-label { font-size: 16px; font-weight: 600; color: #1e293b; min-width: 220px; text-align: center; }
+    .week-label small { display: block; font-size: 12px; font-weight: 400; color: #64748b; }
+
+    .week-days { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 32px; }
+    .day-btn { 
+        display: inline-flex; flex-direction: column; align-items: center; justify-content: center; 
+        min-width: 110px; padding: 12px 8px; border: 1px solid #e2e8f0; background: #fff; 
+        color: #1e293b; font-size: 13px; font-weight: 600; border-radius: 8px; transition: all 0.2s; text-decoration: none;
+    }
+    .day-btn span { margin-top: 4px; font-size: 11px; color: #64748b; font-weight: 400; }
+    .day-btn:hover { border-color: #003366; background: #f8fafc; transform: translateY(-2px); }
+    .day-btn.is-active { background: #003366; border-color: #003366; color: #fff; box-shadow: 0 4px 12px rgba(0, 51, 102, 0.15); }
+    .day-btn.is-active span { color: rgba(255, 255, 255, 0.8); }
+    .day-btn.is-today { position: relative; }
+    .day-btn.is-today::after {
+        content: 'Hôm nay'; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+        background: #f59e0b; color: white; font-size: 9px; padding: 2px 10px; border-radius: 10px; 
+        font-weight: 700; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Compact List Layout */
+    .notif-list-container { 
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    
+    .notif-row { 
+        display: flex; align-items: center; gap: 16px; padding: 12px 20px; 
+        border-bottom: 1px solid #f1f5f9; transition: background 0.2s; text-decoration: none; color: inherit;
+    }
+    .notif-row:last-child { border-bottom: none; }
+    .notif-row:hover { background: #f8fafc; }
+    .notif-row.is-unread { background: #fcfdfe; border-left: 3px solid #003366; }
+    
+    .notif-icon-box { width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .notif-icon-box img { width: 100%; height: 100%; object-fit: contain; }
+
+    .notif-main-info { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    
+    .notif-text { flex: 1; min-width: 0; }
+    .notif-title { font-weight: 700; color: #003366; font-size: 14px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .notif-body { font-size: 13px; color: #64748b; margin: 2px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .notif-meta { display: flex; align-items: center; gap: 15px; flex-shrink: 0; text-align: right; }
+    .notif-time { font-size: 12px; color: #94a3b8; min-width: 110px; }
+    
+    .notif-tag {
+        font-size: 11px; 
+        font-weight: 800; 
+        text-transform: uppercase; 
+        min-width: 80px; 
+        text-align: right;
+        display: inline-block;
+    }
+    .tag-doi_phong { color: #4338ca; }
+    .tag-doi_lich { color: #d97706; }
+    .tag-huy_lich { color: #dc2626; }
+    .tag-bao_tri { color: #475569; }
+
+    /* General UI */
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .btn { height: 36px; border-radius: 6px; padding: 0 14px; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; text-decoration: none; }
+    .btn-primary { background: #003366; color: white; }
+    .btn-outline { background: white; border-color: #e2e8f0; color: #64748b; }
+
+    @media (max-width: 768px) {
+        .notif-main-info { flex-direction: column; align-items: flex-start; gap: 5px; }
+        .notif-meta { width: 100%; justify-content: space-between; margin-top: 5px; }
+        .notif-row { align-items: flex-start; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notif-page-wrapper">
+    <div class="page-header">
+        <h1 class="page-title"><i class='bx bxs-bell'></i> Thông báo</h1>
+        <div class="header-actions">
+            <a href="{% url 'doc_tat_ca' %}" class="btn btn-outline">
+                <i class='bx bx-check-double'></i> Đọc tất cả
+            </a>
+        </div>
+    </div>
+
+    <!-- Week Selector -->
+    <div class="week-toolbar">
+        <a href="?ngay={{ tuan_truoc|date:'Y-m-d' }}" class="btn btn-outline">◀</a>
+        <div class="week-label">
+            {{ dau_tuan|date:"d/m" }} — {{ cuoi_tuan|date:"d/m/Y" }}
+        </div>
+        <a href="?ngay={{ tuan_sau|date:'Y-m-d' }}" class="btn btn-outline">▶</a>
+        <a href="?all=1" class="btn {% if view_all %}btn-primary{% else %}btn-outline{% endif %}">Gần đây</a>
+    </div>
+
+    <div class="week-days">
+        {% for d in ds_ngay %}
+        <a href="?ngay={{ d.ngay|date:'Y-m-d' }}" class="day-btn{% if d.is_selected %} is-active{% endif %}{% if d.is_today %} is-today{% endif %}">
+            {{ d.ten_thu }}
+            <span>{{ d.ngay|date:"d/m" }}</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="notif-list-container">
+        {% for tb in thong_baos %}
+        <a href="{% if not tb.da_doc %}{% url 'danh_dau_da_doc' tb.pk %}{% else %}#{% endif %}" class="notif-row {% if not tb.da_doc %}is-unread{% endif %}">
+            <div class="notif-icon-box">
+                {% if not tb.da_doc %}
+                    <img src="{% static 'img/icons/thong_bao_moi.png' %}" alt="Mới">
+                {% elif tb.loai == 'default' %}
+                    <img src="{% static 'img/icons/thong_bao.png' %}" alt="Thông báo">
+                {% else %}
+                    <img src="{% static 'img/icons/thong_bao_da_doc.png' %}" alt="Đã đọc">
+                {% endif %}
+            </div>
+            <div class="notif-main-info">
+                <div class="notif-text">
+                    <h3 class="notif-title">{{ tb.tieu_de }}</h3>
+                    <p class="notif-body">{{ tb.noi_dung }}</p>
+                </div>
+                <div class="notif-meta">
+                    <span class="notif-tag tag-{{ tb.loai }}">{{ tb.get_loai_display }}</span>
+                    <div class="notif-time">{{ tb.ngay_tao|date:"H:i, d/m/Y" }}</div>
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div style="text-align:center; padding: 60px 20px;">
+            <i class='bx bx-bell-off' style="font-size: 40px; color: #E2E8F0; display: block; margin-bottom: 10px;"></i>
+            <div style="color: #94a3b8; font-size: 14px;">Không có thông báo nào.</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 30px;">
+        {% with page_obj=thong_baos %}{% include 'components/Pagination.html' %}{% endwith %}
+    </div>
+</div>
+{% endblock %}

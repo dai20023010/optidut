@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% block title %}Thêm SV vào lớp {{ lop.ten_lop }} - OptiDUT{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-content { max-width: 100% !important; padding: 20px 40px !important; }
+    
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .page-title { font-size: 20px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 10px; margin: 0; }
+
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02); margin-bottom: 20px; }
+    .card-header { padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14px; color: #1e293b; }
+    .card-body { padding: 20px; }
+
+    .csv-upload-row { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+    .csv-upload-row .file-group { flex: 1; min-width: 250px; }
+    .csv-upload-row .file-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .csv-upload-row .file-group input[type="file"] { width: 100%; height: 42px; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; background: #fff; cursor: pointer; }
+    .csv-upload-row .file-group input[type="file"]:focus { border-color: #003366; outline: none; box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1); }
+    .csv-hint { font-size: 12px; color: #94a3b8; margin-top: 6px; }
+
+    .toolbar-box { padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 16px; }
+    
+    .search-wrapper { position: relative; width: 100%; }
+    .search-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 18px; }
+    .search-input { width: 100%; height: 42px; padding: 0 14px 0 44px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; transition: all 0.2s; }
+    .search-input:focus { border-color: #003366; outline: none; box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1); }
+
+    .action-row { display: flex; align-items: center; justify-content: space-between; }
+    .bulk-actions { display: flex; gap: 8px; }
+    .status-badge { font-size: 12px; font-weight: 700; color: #64748b; background: #e2e8f0; padding: 4px 10px; border-radius: 99px; }
+
+    .table-container { max-height: 600px; overflow-y: auto; }
+    .data-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .data-table thead { position: sticky; top: 0; z-index: 10; background: #003366; }
+    .data-table th { padding: 12px 20px; font-size: 12px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #00264d; }
+    .data-table td { padding: 14px 20px; font-size: 14px; color: #1e293b; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .data-table tr:hover { background: #f8fafc; }
+    
+    .check-cell { width: 40px; text-align: center; }
+    .check-input { width: 18px; height: 18px; cursor: pointer; accent-color: #003366; }
+
+    .mssv-tag { font-family: monospace; font-weight: 700; color: #003366; background: #f0f7ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #d0e7ff; }
+    .sub-info { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+    .form-footer { padding: 20px; background: #fff; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; justify-content: flex-end; }
+    
+    .btn { height: 38px; border-radius: 6px; padding: 0 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; text-decoration: none; }
+    .btn-primary { background: #003366; color: white; }
+    .btn-primary:hover { background: #00264d; }
+    .btn-outline { background: white; border-color: #e2e8f0; color: #64748b; }
+    .btn-outline:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
+    .btn-sm { height: 32px; padding: 0 12px; font-size: 12px; }
+
+    .empty-state { padding: 60px; text-align: center; color: #94a3b8; }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; display: block; opacity: 0.3; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="add-student-container">
+    <div class="page-header">
+        <h1 class="page-title"><i class='bx bx-user-plus'></i> Thêm sinh viên vào lớp: {{ lop.ten_lop }}</h1>
+        <a href="{% url 'danh_sach_sv_lop' lop.pk %}" class="btn btn-outline">
+            <i class='bx bx-arrow-back'></i> Quay lại
+        </a>
+    </div>
+
+    <!-- Import CSV -->
+    <div class="card">
+        <div class="card-header"><i class='bx bx-file'></i> Import nhanh từ file CSV</div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="csv-upload-row">
+                    <div class="file-group">
+                        <label for="csvFile">Chọn file CSV</label>
+                        <input type="file" id="csvFile" name="csv_file" accept=".csv" required>
+                        <div class="csv-hint">
+                            <i class='bx bx-info-circle'></i>
+                            File CSV cần có cột <strong>ma_so</strong> (MSSV). 
+                            <a href="{% url 'download_mau_csv_sv_lop' lop.pk %}" style="color:#003366;font-weight:600;">Tải file mẫu</a>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class='bx bx-upload'></i> Import CSV</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if csv_errors %}
+    <div class="card" style="border-color: #dc2626;">
+        <div class="card-header" style="background: #fef2f2; color: #dc2626; border-color: #fecaca;">
+            <i class='bx bx-error-circle'></i> Lỗi import CSV — cần sửa file và tải lại
+        </div>
+        <div class="card-body">
+            <p style="color:#475569;margin-bottom:12px;font-size:14px;">
+                Có <strong>{{ csv_errors|length }}</strong> lỗi trong file CSV.
+                {% if csv_valid_count %}
+                <span style="color:#16a34a;">{{ csv_valid_count }} dòng hợp lệ sẽ được import sau khi sửa hết lỗi.</span>
+                {% endif %}
+            </p>
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:16px;max-height:400px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                        <tr style="border-bottom:2px solid #fecaca;">
+                            <th style="padding:8px 12px;text-align:left;color:#991b1b;width:80px;">Dòng</th>
+                            <th style="padding:8px 12px;text-align:left;color:#991b1b;">Lỗi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for err in csv_errors %}
+                        <tr style="border-bottom:1px solid #fee2e2;">
+                            <td style="padding:8px 12px;font-family:monospace;color:#991b1b;font-weight:600;white-space:nowrap;">
+                                {{ err|slice:":8"|cut:":" }}
+                            </td>
+                            <td style="padding:8px 12px;color:#b91c1c;">{{ err }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:16px;padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:13px;color:#92400e;">
+                <i class='bx bx-bulb'></i>
+                <strong>Hướng dẫn:</strong> Sửa lại các lỗi trong file CSV, sau đó tải lên lại. 
+                Import chỉ được thực hiện khi <strong>tất cả</strong> các dòng đều hợp lệ.
+                <a href="{% url 'download_mau_csv_sv_lop' lop.pk %}" style="color:#003366;font-weight:600;margin-left:8px;">Tải file mẫu</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Chọn thủ công -->
+    <form method="post" class="card">
+        {% csrf_token %}
+        
+        <div class="card-header"><i class='bx bx-list-ul'></i> Chọn sinh viên từ danh sách</div>
+
+        <div class="toolbar-box">
+            <div class="search-wrapper">
+                <i class='bx bx-search'></i>
+                <input type="text" id="searchSV" class="search-input" placeholder="Tìm theo tên, MSSV, lớp hoặc khoa..." onkeyup="filterSV()">
+            </div>
+
+            <div class="action-row">
+                <div class="bulk-actions">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="selectAll()">Chọn tất cả</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="deselectAll()">Bỏ chọn tất cả</button>
+                </div>
+                <span class="status-badge" id="countSelected">Đã chọn: 0 sinh viên</span>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table" id="svTable">
+                <thead>
+                    <tr>
+                        <th class="check-cell"></th>
+                        <th>Sinh viên</th>
+                        <th>Lớp sinh hoạt</th>
+                        <th>Khoa quản lý</th>
+                        <th>Niên khóa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sv in sv_chua_dk %}
+                    <tr class="sv-row" 
+                        data-search="{{ sv.ho_ten|lower }} {{ sv.ma_so|lower }} {{ sv.lop_sinh_hoat.ten_lop|lower }} {{ sv.lop_sinh_hoat.khoa_quan_ly|lower }}">
+                        <td class="check-cell">
+                            <input type="checkbox" name="sinh_vien_ids" value="{{ sv.pk }}" class="check-input" onchange="updateCount()">
+                        </td>
+                        <td>
+                            <div style="font-weight: 600; color: #1e293b;">{{ sv.ho_ten }}</div>
+                            <span class="mssv-tag">{{ sv.ma_so|default:"—" }}</span>
+                        </td>
+                        <td>{{ sv.lop_sinh_hoat.ten_lop|default:"—" }}</td>
+                        <td>{{ sv.lop_sinh_hoat.khoa_quan_ly|default:"—" }}</td>
+                        <td>
+                            {% if sv.lop_sinh_hoat.khoa_hoc %}
+                            <span style="color: #64748b;">Khóa {{ sv.lop_sinh_hoat.khoa_hoc }}</span>
+                            {% else %}
+                            —
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <i class='bx bx-user-x'></i>
+                                <p>Không còn sinh viên nào khả dụng để thêm vào lớp này.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="form-footer">
+            <button type="submit" class="btn btn-primary">
+                <i class='bx bx-plus-circle'></i> Thêm sinh viên đã chọn
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function filterSV() {
+    const q = document.getElementById('searchSV').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.sv-row');
+    
+    rows.forEach(row => {
+        const text = row.dataset.search;
+        row.style.display = text.includes(q) ? '' : 'none';
+    });
+}
+
+function selectAll() {
+    document.querySelectorAll('.sv-row:not([style*="display: none"]) .check-input').forEach(cb => cb.checked = true);
+    updateCount();
+}
+
+function deselectAll() {
+    document.querySelectorAll('.check-input').forEach(cb => cb.checked = false);
+    updateCount();
+}
+
+function updateCount() {
+    const count = document.querySelectorAll('.check-input:checked').length;
+    document.getElementById('countSelected').textContent = 'Đã chọn: ' + count + ' sinh viên';
+}
+</script>
+{% endblock %}
